@@ -108,26 +108,61 @@ sum(iris$Petal.Length[iris$Petal.Length <= 3])
 
 
 c. assuming `x` equals the sepal length of the 10th virginica iris, then $4\cdot x/2^3$
+```{r}
+virginicas = subset(iris, Species == "virginica") #subset data into only virginicas
+x = virginicas$Sepal.Length[10]
+4 * x / 2^3
+```
+
 
 d. assuming `x` equals the sum of all setosa sepal widths, then $4\cdot(x/2)^3$.
+```{r}
+setosas = subset(iris, Species == "setosa") #subset data into only setosas
+x = sum(setosas$Sepal.Width)
+4 * (x/2)^3
+```
+
 
 
 ### 4. Using the Instructor Notes from Week 03, address the following:
 
 a. run the code that appears in slide 20 of the intro-slides.pdf slide deck.
+```{r}
+set.seed(13) # set the random seed
+x = rnorm(n = 20) # generate predictor variable
+y = rnorm(n = 20, mean = x) # generate response variable
+plot(x, y, pch = 19) # plot (x,y) pairs
+```
+
 
 b. change the seed number in the `set.seed()` command from 13 to 14. Then, re-run the code in part **a**.
+```{r}
+set.seed(14) # set the random seed
+x = rnorm(n = 20) # generate predictor variable
+y = rnorm(n = 20, mean = x) # generate response variable
+plot(x, y, pch = 19) # plot (x,y) pairs
+```
+
 
 c. Is there a difference between the results of parts **a** and **b**? If so, describe some of the obvious differences.
 
+Yes, there is a difference in both the values of the x and y variables. The most obvious differences are shown in the graph, where the graph x ranges differ. This is due to having a different set of x values due to changing the seed. A seed allows us to replicate random variables, such as a variable that draws from a normal distribution in this case. Setting the seed beforehand will allow us to rerun the code and get the exact same results.
+
 d. Why is it important to set the random seed at the beginning of a simulation?
+
+As stated above, it is important to set the random seed at the beginning of a simulation so you will get the same results if you run the code again. When the seed is set, it removes some of the randomness from generating numbers due to the same numbers being generated on a given seed. This allows you to fix and rerun code if needed and always obtain the same results.
 
 ### 5. Incorporate images that address the following:
 
 a. a screenshot that shows your personal repo in GitHub Enterprise
+![Screenshot of my personal repo on GitHub Enterprise.](github_repo.png)
 
 b. a screenshot of the Git terminal (or shell) open within RStudio
+![Screenshot of Git shell open within RStudio](github_shell.png)
 
 c. a screenshot of RStudio with the 4 panes basic such that there's a Git tab in the top right pane, and the files in the repo in the bottom right pane
+![Screenshot of RStudio panes.](rstudio_panes.png)
+
 
 d. the push/pull pop up window of RStudio with the final commit message of your homework submission.
+![Screenshot of final commit message.](github_repo.png)
