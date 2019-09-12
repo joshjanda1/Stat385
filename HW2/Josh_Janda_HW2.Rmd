@@ -1,6 +1,6 @@
 ---
 title: "STAT 385 Homework Assignment 02"
-author: ""
+author: "Josh Janda"
 date: "Due by 12:00 PM 09/28/2019"
 output: html_document
 ---
@@ -85,9 +85,11 @@ zlist <- split(dat, f = dat$z)
 
 Determine which level of `z` has a higher mean in `y`.  Report your results.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
+```
 
+```{r}
 dat %>% group_by(z) %>% summarize(mean_y = mean(y))
 ```
 
@@ -106,44 +108,132 @@ Assumption one is fulfilled due to the form of the function Y, which follows the
 a. place the first 5 letters of the alphabet into a list
 
 ```{r}
-list3 = list(letters[1:5])
+list3 = list(letters = letters[1:5])
 ```
 
 
 b. place a random set of 2 integers as a new component of the list made in part **a**
 
 ```{r}
-list3$numbers = rnorm(2)
+list3$numbers = sample(1:100, 2)
 ```
 
 
 c. create a matrix with two columns such that column 1 contains the 5 letters repeating, column 2 contains the 2 integers repeating, and column 3 that shows all possible pairs of the elements of the first 2 columns  
 
 ```{r}
-#matrix_c = matrix(rep(list3[1]), rep(list3$numbers), combn(list3[1],list3$numbers), 2)
+matrix_c = cbind("letters" = paste(list3$letters),
+                 "numbers" = paste(list3$numbers),
+                 "combinations" = apply(expand.grid(list3$letters, list3$numbers), 1, paste, collapse=","))
+
+matrix_c
 ```
 
 d. add a 4th column to the matrix from part **c** that is a randomized ordering of the pairs of the 3rd column
+
+```{r}
+matrix_c = cbind(matrix_c, "random_combinations" = sample(matrix_c[, "combinations"]))
+
+matrix_c
+```
+
 
 
 ### 4. Use the CCSO Bookings Data to accomplish the following:
 
 a. read in the data using R's default method for comma separated files and show the data dimension
 
+```{r}
+ccso_data = read.csv('CCSO_Data.csv')
+dim(ccso_data)
+```
+
+
 b. show only the 2012 bookings for people ages 17-23 years old not residing in Illinois and show the data dimension
+
+```{r}
+
+ccso_data$BOOKING.DATE = as.Date(ccso_data$BOOKING.DATE, format = '%m/%d/%Y')
+
+ccso_data_filtered1 = ccso_data %>%
+  filter(BOOKING.DATE >= "2012-01-01" & BOOKING.DATE <= "2012-12-31") %>%
+  filter(Age.at.Arrest >= 17 & Age.at.Arrest <= 23) %>%
+  filter(STATE != "ILLINOIS")
+
+dim(ccso_data_filtered1)
+```
+
 
 c. show only the bookings for people who have employment status as "student" booked after the year 2012 residing in Danville and show the data dimension
 
+```{r}
+ccso_data_filtered2 = ccso_data %>%
+  filter(EMPLOYMENT.STATUS == "Student") %>%
+  filter(BOOKING.DATE >= "2013-01-01") %>%
+  filter(CITY == "DANVILLE")
+
+dim(ccso_data_filtered2)
+```
+
+
 d. show only the bookings for Asian people residing in the cities of Champaign or Urbana and show the data dimension
+
+```{r}
+ccso_data_filtered3 = ccso_data %>%
+  filter(RACE == "Asian/Pacific Islander") %>%
+  filter(CITY %in% c("CHAMPAIGN", "URBANA"))
+
+dim(ccso_data_filtered3)
+```
+
 
 
 ### 5. Use the CCSO Bookings Data to accomplish the following:
 
 a. read in the data using the **data.table** package and show the data dimension
 
+```{r}
+library(data.table)
+ccso_datatable = fread("CCSO_data.csv", sep = ",")
+
+dim(ccso_datatable)
+```
+
+
 b. show only the 2012 bookings for people ages 17-23 years old not residing in Illinois and show the data dimension
+
+```{r}
+ccso_datatable$BOOKING.DATE = as.Date(ccso_data$BOOKING.DATE, format = '%m/%d/%Y')
+
+ccso_datatable_filtered1 = ccso_data %>%
+  filter(BOOKING.DATE >= "2012-01-01" & BOOKING.DATE <= "2012-12-31") %>%
+  filter(Age.at.Arrest >= 17 & Age.at.Arrest <= 23) %>%
+  filter(STATE != "ILLINOIS")
+
+dim(ccso_datatable_filtered1)
+```
+
 
 c. show only the bookings for people who have employment status as "student" booked after the year 2012 residing in Danville and show the data dimension
 
+```{r}
+ccso_datatable_filtered2 = ccso_data %>%
+  filter(EMPLOYMENT.STATUS == "Student") %>%
+  filter(BOOKING.DATE >= "2013-01-01") %>%
+  filter(CITY == "DANVILLE")
+
+dim(ccso_datatable_filtered2)
+```
+
+
 d. show only the bookings for Asian people residing in the cities of Champaign or Urbana and show the data dimension
+
+```{r}
+ccso_datatable_filtered3 = ccso_data %>%
+  filter(RACE == "Asian/Pacific Islander") %>%
+  filter(CITY %in% c("CHAMPAIGN", "URBANA"))
+
+dim(ccso_datatable_filtered3)
+```
+
 
