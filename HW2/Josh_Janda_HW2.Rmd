@@ -1,0 +1,149 @@
+---
+title: "STAT 385 Homework Assignment 02"
+author: ""
+date: "Due by 12:00 PM 09/28/2019"
+output: html_document
+---
+
+## The Homework Problems
+
+Below you will find problems for you to complete as an individual. It is fine to discuss the homework problems with classmates, but cheating is prohibited and will be harshly penalized if detected.
+
+### 1. Do the following:
+
+a. create two vectors labelled `x` and `y`, each with 500 elements.  You can do this any way you like.  Combine these vectors into a matrix called `mat`.  Run the command `head(mat)`.
+
+```{r}
+set.seed(385)
+x = rnorm(500)
+y = rnorm(500)
+
+mat = cbind(x, y)
+head(mat)
+```
+
+b. run the command `z <- rep(c(1,3), each = 250)`.  Combine `mat` and `z`.  Convert the matrix `mat` with columns `x`, `y`, and `z` into a data frame called `dat`. 
+
+```{r}
+z = rep(c(1,3), each = 250)
+
+mat = cbind(x, y, z)
+
+dat = as.data.frame(mat)
+```
+
+
+c. reassign `z` as a factor variable within the data frame `dat`.  Run the command `str(dat)`.  You should see something like:
+
+    'data.frame':	500 obs. of  3 variables:<br>
+    $ x: num  1.4176 1.25 -1.4528 -0.3946 0.0264 ...<br>
+    $ y: num  0.0736 -0.193 -0.3286 -0.9563 -0.1975 ...<br>
+    $ z: Factor w/ 2 levels "1","3": 1 1 1 1 1 1 1 1 1 1 ...
+  
+```{r}
+dat$z = as.factor(dat$z)
+str(dat)
+```
+
+
+d. run the following commands:
+
+```{r}
+2 + dat$z
+2 + as.numeric(dat$z)
+2 + as.numeric(levels(dat$z)[dat$z])
+```
+
+Carefully describe why the first line returned a warning message and both the second and third lines      did not.  Which of the three lines properly added 2 to the levels of the factor variable `z`? Why?
+
+The first line returned a warning message because you are attempting to add 2 to factor levels and not numbers (floats or integers). Factors are levels of a variable, meaning the values that the variable can take and are not actual numeric values. For example, if *z* was "male" or "female" then it would not make sense to add 2 to these factor levels.
+
+The second and third lines did not throw errors because you are adding 2 to the levels "1" and "3" after converting them to numeric variables. Once factors levels are converted to numeric variables, you are able to perform mathematical operations on them just like any other numeric variable.
+
+The third line properly added 2 to the levels of the factor variable because in this line you added 2 to the numeric values of the levels of the factor. In the second line, when converting `z` to a numeric type you are actually converting the variable to just 1's and 2's so adding 2 to these numbers results in 3's and 4's. However, when you convert the levels of `z` to numeric in line three you are actually converting the levels "1" and "3" to numeric, then adding two. This will result in the wanted outcome.
+
+
+e. remove the rows of `dat` corresponding to lowest 100 values of `x`.
+
+```{r}
+dat = tail(dat[order(dat$x),], n = 400)
+rownames(dat) = 1:nrow(dat)
+```
+
+
+### 2. With the `dat` dataset in problem 1, do the following:
+
+a. run the commands:
+
+```{r}
+set.seed(13)
+e <- rnorm(400)
+dat$x <- rnorm(400)
+dat$y <- dat$x * 2 + as.numeric(levels(dat$z)[dat$z]) + e
+zlist <- split(dat, f = dat$z)
+```
+
+Determine which level of `z` has a higher mean in `y`.  Report your results.
+
+```{r}
+library(tidyverse)
+
+dat %>% group_by(z) %>% summarize(mean_y = mean(y))
+```
+
+
+b.  The fourth line of the code in part a generates `y` as a linear function of the numeric variable `x` and the factor variable `z`.  Can you determine that the linear modeling assumptions are satisfied for the regression of `y` on `x` and `z`? Explain why or why not in detail. **Hint**: read the documentation of the `rnorm` function and examine its defaults.  The linear modeling assumptions are: 1) there is a linear relationship between the response variable and the predictor variables; 2) there is no auto-correlation (cases are independent); 3) errors are normally distributed; 4) the standard deviation of the errors are constant across all predictor variables (the values of `x` and the levels of `z` in this problem).  There is no need to use numerical or graphical summaries to verify whether or not these modeling assumptions hold, all of the necessary information is contained in the code chunk in part **a**.
+
+These assumptions do hold for the regression of `y` on `x` and `z`. The form of this regression is:
+
+$Y = 2X + Z + \epsilon$ where $\epsilon \sim N(0,1)$
+
+Assumption one is fulfilled due to the form of the function Y, which follows the linear form $Y = aX + b$. Assumption two is fulfilled as there is no autocorrelation in the residuals of the function as the residuals are independent of one another. Assumption three is fulfilled as the errors are generated from a standard normal distribution, so they are in fact normally distributed. Finally, assumption four is fulfilled as the standard deviation of the errors is 1 due to being generated from a standard normal distribution with mean 0 and standard deviation of 1.
+ 
+
+### 3. Using functions, lists, matrices and vectors, complete the following:
+
+a. place the first 5 letters of the alphabet into a list
+
+```{r}
+list3 = list(letters[1:5])
+```
+
+
+b. place a random set of 2 integers as a new component of the list made in part **a**
+
+```{r}
+list3$numbers = rnorm(2)
+```
+
+
+c. create a matrix with two columns such that column 1 contains the 5 letters repeating, column 2 contains the 2 integers repeating, and column 3 that shows all possible pairs of the elements of the first 2 columns  
+
+```{r}
+#matrix_c = matrix(rep(list3[1]), rep(list3$numbers), combn(list3[1],list3$numbers), 2)
+```
+
+d. add a 4th column to the matrix from part **c** that is a randomized ordering of the pairs of the 3rd column
+
+
+### 4. Use the CCSO Bookings Data to accomplish the following:
+
+a. read in the data using R's default method for comma separated files and show the data dimension
+
+b. show only the 2012 bookings for people ages 17-23 years old not residing in Illinois and show the data dimension
+
+c. show only the bookings for people who have employment status as "student" booked after the year 2012 residing in Danville and show the data dimension
+
+d. show only the bookings for Asian people residing in the cities of Champaign or Urbana and show the data dimension
+
+
+### 5. Use the CCSO Bookings Data to accomplish the following:
+
+a. read in the data using the **data.table** package and show the data dimension
+
+b. show only the 2012 bookings for people ages 17-23 years old not residing in Illinois and show the data dimension
+
+c. show only the bookings for people who have employment status as "student" booked after the year 2012 residing in Danville and show the data dimension
+
+d. show only the bookings for Asian people residing in the cities of Champaign or Urbana and show the data dimension
+
