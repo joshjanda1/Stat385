@@ -1,0 +1,466 @@
+---
+title: "STAT 385 Fall 2019 - Homework Assignment 03"
+date: "Due by 12:00 PM 10/13/2019"
+output: html_document
+---
+
+
+## The Homework Problems
+
+Below you will find problems for you to complete as an individual. It is fine to discuss the homework problems with classmates, but cheating is prohibited and will be harshly penalized if detected.
+
+### 1. Create a custom volume measurement function that will convert the following units of volume:
+
+a. 13 imperial (liquid) cups to cubic inches.
+
+```{r}
+cups_to_cubic_inches = function(cups) {
+  14.4375*cups
+}
+
+cups_to_cubic_inches(13)
+```
+
+b. 2.5 US customary (liquid) gallons to fluid ounces.
+
+```{r}
+gallons_to_fl_ozs = function(gallons) {
+  128*gallons
+}
+
+gallons_to_fl_ozs(2.5)
+```
+
+c. 3 US customary (dry) teaspoons to milliliters.
+
+```{r}
+tsp_to_millileters = function(teaspoons) {
+  teaspoons/.20288
+}
+
+tsp_to_millileters(3)
+```
+
+d. 75 (dry) liters to imperial quarts.
+
+```{r}
+liters_to_quarts = function(liters) {
+  liters*0.9081
+}
+
+liters_to_quarts(75)
+```
+
+
+### 2. Do the following:
+
+a. create a 25 $\times$ 25 matrix with autoregressive structure with $p = 9/10$, every element in the matrix should be equal to $(9/10)^{|i-j|}$ where `i` is the row index and `j` is the column index.  Report the row and column sums of this matrix.
+
+```{r}
+matrix = matrix(0:0, nrow = 25, ncol = 25)
+
+for (i in 1:25) {
+  for (j in 1:25) {
+    
+    matrix[i, j] = (9/10)^(abs(i-j))
+    
+  }
+}
+
+rowsum = rowSums(matrix)
+colsum = colSums(matrix)
+
+data.frame("Column Sum" = colsum,
+           "Row Sum" = rowsum)
+```
+
+b. run the commands:
+
+```{r}
+set.seed(13)
+x <- c(10, 10) 
+n <- 2
+```
+
+Create a while loop which concatenates a new mean-zero normal random variables that have $\sigma = 2$ to the existing vector `x` at every iteration.  Have this loop terminate when the standard error (estimated standard deviation of `x` divided by $\sqrt{n}$) is lower than 1/10.  Report $n$. 
+
+```{r}
+while (sd(x) / sqrt(n) >= 1/10 | n <= 50) {
+  rvs = rnorm(1, 0, sd = 2)
+  x = append(x, rvs)
+  n = n + 1
+}
+
+n
+```
+
+
+c. repeat part **b** and report $n$ after running the commands:    
+
+```{r}
+set.seed(13)
+x <- rnorm(1, 0, sd = 2)
+n <- 1
+```
+
+```{r}
+
+while (sd(x) / sqrt(n) >= 1/10 | n <= 50) {
+  rvs = rnorm(n, 0, sd = 2)
+  x = append(x, rvs)
+
+  n = n + 1
+}
+
+n
+```
+
+d. The sample size required to get a standard error lower than 1/10 was smaller in part **c** than it was in part **b**.  We would expect for this to be the case before we ran any code.
+Why?
+
+We would expect this to be the case as the starting x for part c is already a normal random variable between 0 and 1, while the starting x's for part b are both 10. Since the 10's are far away from the range (0, 1), we would expect that this would inflate the standard error when adding random variables each loop. This will cause the loop requiring a larger sample size to satisfy the condition of the standard error of x being less than 1/10.
+
+
+### 3. Do the following (Efron's bootstrap):
+
+a. load in the dataset [dataHW3.csv](https://uofi.box.com/shared/static/mwntzgp2rvyewf292k6i62pykjz1onnw.csv)
+
+```{r}
+datahw3 = read.csv("datahw3.csv")
+```
+
+
+b. call the first column of this dataset x. Compute the statistic `(mean(x) - 10)/se(x)` where `se` is shorthand for standard error (see the previous problem for the definition of standard error).  
+
+```{r}
+x = datahw3[, 1]
+
+
+se_x = sd(x) / sqrt(length(x))
+(mean(x) - 10) / se_x
+```
+
+
+c. now resample the elements of x with replacement 10000 times, and compute and store the statistic (mean(x') - mean(x))/se(x') at each iteration where x' corresponds to the resample of the elements of x. Call the vector which contains these reasampled statistics `resamples'.  Use an apply function for this part.
+
+```{r}
+n = 10000
+
+resam_function = function(x) {
+  samplex = sample(x, 10, replace = TRUE)
+  (mean(samplex) - mean(x)) / (sd(samplex) / sqrt(length(samplex)))
+}
+
+resamples = replicate(n, resam_function(x))
+```
+
+
+d.  run the command `hist(resamples, breaks = 20)' to make a histogram, include this histogram in your assignment.
+
+```{r}
+hist(resamples, breaks = 20)
+```
+
+
+e. repeat parts **b** through **d** with respect to the second column of dataHW3.csv.  Would you say that the test statistic calculated from each column has the same distribution?
+
+```{r}
+y = datahw3[, 2]
+
+
+se_y = sd(y) / sqrt(length(y))
+(mean(y) - 10) / se_y
+
+n = 10000
+
+resam_function = function(y) {
+  sampley = sample(y, 10, replace = TRUE)
+  (mean(sampley) - mean(y)) / (sd(sampley) / sqrt(length(sampley)))
+}
+
+resamples = replicate(n, resam_function(y))
+
+hist(resamples, breaks = 20)
+
+```
+
+The test statistic calculated from column 2 is most definitely not the same distribution as the test statistic calculated from column 1. The test statistics calculated from column 1 is obviously a normal distribution, while the test statistics calculated from column 2 are not. So, I would say that the test statistics calculated from each column do not have the same distribution.
+
+### 4. Do the following:
+
+a. make sure you have the dataset [WPP2010.csv](https://uofi.box.com/shared/static/vielwghs3qtdf2p25nejeiaq6ce9nonf.csv) (your file location may need to change) and then run the commands: 
+
+```{r}
+# load in UN dataset and remove irrelevant variables
+options(warn=-1) #supresses warnings
+WPP2010 <- read.csv("WPP2010.csv", header = TRUE) #reads in the data csv file
+colnames(WPP2010)[3] <- c("region") #sets the 3rd column name to region
+colnames(WPP2010)[6] <- c("year") #sets the 6th column name to year
+colnames(WPP2010)[7:17] <- paste("age", 0:10 * 5, sep = "") #sets columns 7-17 to "agen" where n is the number between 0 and 10 times 5.
+WPP2010 <- WPP2010[, c(3, 6, 11, 12)] #sets data to include all rows and columns 3, 6, 11, 12
+
+
+
+# restrict attention to countries of interest
+countries <- c("Canada", "Mexico", "United States of America") #creates vector of countries
+
+# obtain population data for all countries for all years
+dataset <- WPP2010[WPP2010[, 1] %in% countries, ] #gets population of each country for each year
+dataset[, 3] <- as.numeric(levels(dataset[, 3]))[dataset[, 3]] #gets numeric values of levels in column 3, removes all duplicate entries, then sets column 3 to appropriate populations for each country each year
+dataset[, 4] <- as.numeric(levels(dataset[, 4]))[dataset[, 4]]#gets numeric values of levels in column 4, removes all duplicate entries, then sets column 4 to appropriate populations for each country each year
+dataset[, 3:4] <- dataset[, 3:4] / 1000 #divides each value in columns 3 and 4 by 1000
+
+# get population dataset for this analysis corresponding to the 
+# Census years 
+dataset.years <- dataset[dataset[, 2] %in% 
+  c("1960", "1970", "1980", "1990", "2000", "2010"), ]#creates dataset named dataset.years that takes all rows and columns of dataset where column 2 of dataset are in the above list of dates
+dataset.years[, 2] <- factor(dataset.years[, 2])#sets second column of dataset.years to a factor of itself
+dataset.years.list <- split(dataset.years, f = as.factor(dataset.years[, 2]))#splits all years into separate parts of a list named dataset.years.list. Each year in the list contains population info for each country.
+pops <- unlist(lapply(dataset.years.list, function(x) sum(x[, 3:4])))#unlists dataset.years.list, then uses a list apply to add all population values for each age group of each country per year. gives us the total population for each year.
+```
+
+b. The code in part **a** is partially commented.  Add comments to all remaining lines of code to make the script clear.
+
+c. Determine the proportion of mainland North American males aged 20-29 that lived in 1970 or before.
+
+```{r}
+
+sum(pops[[1]], pops[[2]]) / sum(pops)
+
+```
+
+
+
+
+### 5. With the tidyverse package and its functions, do the following with the [CCSO Bookings Data](https://uofi.box.com/shared/static/9elozjsg99bgcb7gb546wlfr3r2gc9b7.csv):
+
+a. show only the 2012 bookings for people ages 17-23 years old not residing in Illinois and show the data dimension
+
+```{r}
+library(tidyverse)
+ccso_data = read_csv("ccso_data.csv")
+names(ccso_data) = make.names(names(ccso_data),unique = TRUE)
+
+ccso_data$BOOKING.DATE = as.Date(ccso_data$BOOKING.DATE, format = '%m/%d/%Y')
+
+ccso_5a = filter(ccso_data,
+                 BOOKING.DATE >= "2012-01-01" & BOOKING.DATE <= "2012-12-31",
+                 Age.at.Arrest >= 17 & Age.at.Arrest <= 23,
+                 STATE != "ILLINOIS"
+                 )
+
+dim(ccso_5a)
+```
+
+
+b. show only the bookings for people who have employment status as "student" booked after the year 2012 residing in Danville and show the data dimension
+
+```{r}
+ccso_5b = filter(ccso_data,
+                 EMPLOYMENT.STATUS == "Student",
+                 BOOKING.DATE >= "2013-01-01",
+                 CITY == "DANVILLE"
+                 )
+
+dim(ccso_5b)
+```
+
+
+c. show only the bookings for Asian people residing in the cities of Champaign or Urbana and show the data dimension
+
+```{r}
+ccso_5c = filter(ccso_data,
+                 RACE == "Asian/Pacific Islander",
+                 CITY %in% c("CHAMPAIGN", "URBANA"))
+
+dim(ccso_5c)
+```
+
+
+d. repeat parts a-c using only pipe operators
+
+da. show only the 2012 bookings for people ages 17-23 years old not residing in Illinois and show the data dimension
+
+```{r}
+ccso_5da = ccso_data %>% 
+        filter(BOOKING.DATE >= "2012-01-01" & BOOKING.DATE <= "2012-12-31") %>%
+        filter(Age.at.Arrest >= 17 & Age.at.Arrest <= 23) %>%
+        filter(STATE != "ILLINOIS")
+
+dim(ccso_5da)
+```
+
+
+db. show only the bookings for people who have employment status as "student" booked after the year 2012 residing in Danville and show the data dimension
+
+```{r}
+ccso_5db = ccso_data %>%
+  filter(EMPLOYMENT.STATUS == "Student") %>%
+  filter(BOOKING.DATE >= "2013-01-01") %>%
+  filter(CITY == "DANVILLE")
+
+dim(ccso_5db)
+```
+
+
+dc. show only the bookings for Asian people residing in the cities of Champaign or Urbana and show the data dimension
+
+```{r}
+ccso_5dc = ccso_data %>%
+  filter(RACE == "Asian/Pacific Islander") %>%
+  filter(CITY %in% c("CHAMPAIGN", "URBANA"))
+
+dim(ccso_5dc)
+```
+
+
+## Select in-class tasks
+
+Completion of select in-class tasks will be worth 1 point and will be graded largely by completion. Obvious errors and incomplete work will recieve deductions. Problems 3-5 are directly copied from your notes. Problems 1-2 are copied from the notes with minor alterations. In these problems I ask that you display the first 5 rows of the dataset instead of the entire dataset.
+
+1. Load in the CCSO dataset, discover 3 factor (or categorical) variables and 3 numeric variables. Show the first 5 rows of this dataset with only those 6 variables.
+
+```{r}
+ccso_data = read_csv("ccso_data.csv")
+names(ccso_data) = make.names(names(ccso_data),unique = TRUE)
+
+sapply(ccso_data, typeof)
+
+char = c("STATE", "SEX", "RACE")
+num = c("BOOKING.NUMBER", "JACKET.NUMBER", "Age.at.Arrest")
+
+head(ccso_data[1:5, c(char, num)])
+```
+
+
+2. Rename one of the factor variables to a name that is either easier to understand than the original variable name. Show the first 5 rows of the dataset with all variables such that the variable with the new name is the first column in the dataset.
+
+```{r}
+head(ccso_data %>%
+       rename(GENDER = SEX) %>%
+       select(GENDER, everything()), 5)
+```
+
+
+3. Write 3 separate loops: a for loop, while loop, and repeat loop that give the same result. The result should be the cumulative sum of Days in jail among Black people whose Arrest Ages 18-24 with Student as Employment status within the CCSO Bookings Data.
+
+```{r}
+ccso_ic3 = ccso_data %>% 
+           filter(RACE == "Black") %>%
+           filter(Age.at.Arrest >= 18 & Age.at.Arrest <= 24) %>%
+           filter(EMPLOYMENT.STATUS == "Student") %>%
+           select(BOOKING.DATE, RELEASED.DATE)
+
+ccso_ic3$BOOKING.DATE = as.Date(ccso_ic3$BOOKING.DATE, format = '%m/%d/%Y')
+ccso_ic3$RELEASED.DATE = as.Date(ccso_ic3$RELEASED.DATE, format = '%m/%d/%Y')
+
+days_for = 0
+for (i in 1:nrow(ccso_ic3)) {
+  days_curr = ccso_ic3$RELEASED.DATE[i] - ccso_ic3$BOOKING.DATE[i]
+  
+  days_for = days_for + days_curr
+  
+}
+days_for
+
+
+days_while = 0
+i = 1
+while (i <= nrow(ccso_ic3)) {
+  days_curr = ccso_ic3$RELEASED.DATE[i] - ccso_ic3$BOOKING.DATE[i]
+  
+  days_while = days_while + days_curr
+  
+  i = i + 1
+}
+days_while
+
+
+days_repeat = 0
+i = 1
+repeat {
+  days_curr = ccso_ic3$RELEASED.DATE[i] - ccso_ic3$BOOKING.DATE[i]
+  
+  days_repeat = days_repeat + days_curr
+  
+  i = i + 1
+  
+  if (i > nrow(ccso_ic3)) {
+    break
+  }
+}
+days_repeat
+
+                                
+```
+
+
+4. Here are some images of R code. Read the code, debug it if necessary, and judge it on its efficiency and correctness. Decide on which set of code is better and improve the better one.
+
+a.
+
+![](https://uofi.box.com/shared/static/2x1h70d5skqpxwke8ftw7xx1rwu41397.jpg)
+
+The set of better code is the code on the right. This code is much more efficient and accomplishes the same task. The code on the right repeats c(3,6) three times which is inefficient, and also adds 6 to column 2 once and column 3 twice which is also inefficient. The better code can be improved by making a matrix with sequence (1, 6) and multiplying that sequence by 3, then setting the ncol in the matrix to three.
+
+
+b.
+
+![](https://uofi.box.com/shared/static/xn2lop472prp18720uevoj4dpyfmtxwq.jpg)
+
+These codes do not even do the same thing. The code on the left creates a list of the given inputs, and the code on the right creates a vector of the give inputs. I cannot judge on efficiency as the codes do different tasks.
+
+
+c.
+
+![](https://uofi.box.com/shared/static/zsr6nmyayso7emjkmk6cfwaxs75wujpj.jpg)
+
+The code on the left is overly long and complicated. You would have to type out each number and add it up so it is wildly inefficient. The code on the right sums up all the numbers that fit the given criterion of 0 < Petal.Length < 3. This code could be improved by splitting the sum function into two steps to be more clear what is going on. It is efficient though.
+
+
+5. Using the vector y below
+```{r nt5}
+set.seed(385)
+y <- rnorm(100)
+```
+
+a. Use the which.min and which.max functions to dispay the index corresponding to the minimum and maximum elelments of `y`.
+  
+```{r}
+which.min(y)
+which.max(y)
+```
+  
+b. Do the which.min and which.max functions work? (try: max(y) == y[which.max(y)]).
+  
+```{r}
+max(y) == y[which.max(y)]
+min(y) == y[which.min(y)]
+```
+
+Yes, the functions work as they display true meaning that the max of y is equal to the value of y corresponding to the index that contains the max. Same with the minimum.
+
+c. Use the which function and the length function to report the proportion of the elements of `y` that are greater than 0.
+  
+```{r}
+length(y[which(y > 0)]) / length(y)
+```
+  
+d. Discuss why the proportion in **part c** is close to 0.5. Hint: What is the mean of the normal distribution that generated the elements in `y`?
+
+The proportion in part c is close to .50 because y was generated from a standard normal distribution of mean 0 and sd of 1. Since a normal distribution is symmetric, approximately 50% of the data should lie below 0 and 50% of the data should lie above 0.
+
+e. Create a factor variable with 50 values of `A` and 50 values of `B`, and name this factor variable `trt`. 
+
+```{r}
+trt = factor(c(rep("A", 50), rep("B", 50)))
+```
+
+  
+f. Create a data frame consisting of `x` and `trt`.
+
+```{r}
+data.frame(y, trt)
+```
+
+  
