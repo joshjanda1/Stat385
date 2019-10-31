@@ -1,0 +1,259 @@
+---
+title: "STAT 385 HW4"
+author: "Josh Janda - joshlj2"
+date: "Due by 12:00 PM on 10/26/2019"
+output: html_document
+---
+
+
+## HW 4 Problems
+
+Below you will find problems for you to complete as an individual. It is fine to discuss the homework problems with classmates, but cheating is prohibited and will be harshly penalized if detected.
+
+### 1. Modify the scaler function in the Week 7 notes.
+
+We created a function called `scalar` in the Week 7 Notes. This function takes a numeric or integer vector as an input (check this on your own) and it outputs the scaled numeric or integer vectors as an output. Make a new version of this function that 1) takes a dataframe as an argument 2) scales all of the numeric and integer-valued columns of that dataframe while leaving all other variables alone 3) returns the original dataframe with scaled numeric and integer-valued columns. Verify that your function is working by testing it on two dataframes. The first dataframe can be anything that you want. The second dataframe should consist of only factor variables, i.e. the function should do nothing to this dataframe and also should not output an error message. Your verification checks should be readable, do not simply report the returned dataframes.
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+scalar_df = function(df) {
+  num_cols = sapply(df, is.numeric) # gets numeric columns
+  
+  scale_cust = function(x) { #function to scale variables..
+    (x - mean(x)) / sd(x)
+  }
+  
+  df[num_cols] = lapply(df[num_cols], scale_cust)#applies scale function to each numeric column
+  df #returns dataframe with scaled numeric columns along with other columns
+}
+
+test_df1 = data.frame(x1 = rchisq(100, 1),
+                      x2 = rpois(100, 1),
+                      x3 = rnorm(100, mean=10, sd=100))
+test_df2 = data.frame(f1 = factor(rep(c(0, 1), 50)),
+                      f2 = factor(rep(c(1, 2, 3, 4), 25)),
+                    f3 = factor(rep(c("YES", "NO"), 50))
+                      )
+scaled_df1 = scalar_df(test_df1)
+scaled_df2 = scalar_df(test_df2)
+
+verify_scaled = function(df) {
+  num_cols = colnames(df %>% select_if(is.numeric))
+  
+  if (length(num_cols) == 0) {
+    print("No variables have been scaled in this dataframe.")
+  }
+  else{
+    df_num = df[, num_cols]
+    data.frame("Mean" = apply(df_num, 2, mean),
+               "Std" = apply(df_num, 2, sd))
+  }
+}
+
+verify_scaled(scaled_df1)
+verify_scaled(scaled_df2)
+```
+
+
+### 2. Using the Chicago Food Inspections Data, do the following:
+
+a. create a visualization (plot) of at least two variables using this dataset
+
+```{r}
+options(scipen = 10)
+inspection_data = read_csv("https://data.cityofchicago.org/api/views/4ijn-s7e5/rows.csv")
+ggplot(inspection_data, aes(x = factor(Risk))) +
+  geom_bar(stat = "count", position = "dodge", fill = "blue") +
+  labs(x = "Risk Level", y = "Frequency",
+       title = "Risk Level Counts in Chicago Inspection Data") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black"))
+```
+
+b. explain what is good and what is bad about the visualization
+
+One good thing about this plot is that both the X and Y axis are labeled, along with a title that accurately describes the visualization. It also conveys useful information, which is the total number of restaurants classified for each level of risk. What is bad about this visualization is that it does not display much more information that is useful than the count of each risk level. Without showing other information between risk levels, such as inspection resuts, we have no real use for count of risk levels. Overall, this plot conveys some information but can be substantially improved to convey much more useful statistics.
+
+c. show a substantially improved visualization
+
+```{r}
+freq_table = as.data.frame(inspection_data %>%
+                             count(Risk, Results))
+
+ggplot(freq_table, aes(factor(Risk), n, fill = Results)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Risk Levels", y = "Frequency",
+       fill = "Inspection Result",
+       title = "Count of Inspection Results between Risk Levels") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black"))
+```
+
+
+d. describe the improvement and why the improved plot in part **c** helps the reader/viewer more than the original plot in part **a**.
+
+The improvement in the plot above is that it now yields useful information to the reader/viewer. This plot gives you information on how inspection results differ between restaurant risk levels. This is useful as it shows us that restaurants with a higher risk ultimately have a higher chance of failing inspection. In plot A, there is no real useful information to gain from the plot. This plot is substantially better than the plot in part A, both visually as well as information wise.
+
+### 3. Using the Chicago Food Inspections Data, do the following:
+
+a. create a table of descriptive statistics of your choice
+
+```{r}
+inspection_data %>% group_by(Risk) %>%
+  summarise(failRate = sum(Results == "Fail") / nrow(inspection_data))
+fail_rates = inspection_data %>% group_by(Risk) %>%
+  summarise(failRate = sum(Results == "Fail") / nrow(inspection_data)) %>%
+  mutate(rounded = round(failRate, 3))
+```
+
+b. add one descriptive statistic to the plot in part **1c**
+
+```{r}
+freq_table = as.data.frame(inspection_data %>%
+                             count(Risk, Results))
+ggplot(freq_table, aes(factor(Risk), n, fill = Results)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Risk Levels", y = "Frequency",
+       fill = "Inspection Result",
+       title = "Count of Inspection Results between Risk Levels") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black")) +
+  annotate(geom = "text", x = 1.7, y = 30, label = fail_rates$rounded[2] , vjust = -14,
+           color = "black") +
+  annotate(geom = "text", x = 2.75, y = 30, label = fail_rates$rounded[3] , vjust = -5,
+           color = "black") +
+  annotate(geom = "text", x = 3.75, y = 30, label = fail_rates$rounded[4] , vjust = -2,
+           color = "black")
+```
+
+c. write a brief explanatory narrative of the visualization in part **2b**. In your explanation, be convincing and persuasive about your visualization. Attempt to highlight why this visualization is crucial to your imaginary supervisor.
+
+In the plot above, we can see the frequency of inspection results between each risk level of the restaurant. We can also see for each visible risk level on the plot, the fail rate of that level. From this plot, we can see both visually and numerically, the high risk level has the highest fail rate, the medium risk level has the second highest fail rate, and the low risk level has the lowest fail rate. Overall, this plot let's us see the frequency of results between each risk level, as well as giving us insight on how often restaurants fail given their risk level.
+
+### 4. Using the SBA Business Loans Data, do the following:
+
+```{r}
+sba = read_csv("https://uofi.box.com/shared/static/vi37omgitiaa2yyplrom779qvwk1g14x.csv")
+
+sba$DisbursementGross_2 = as.numeric(gsub("[\\$,]", "", sba$DisbursementGross))
+```
+
+
+a. Create a visualization (plot) of at least two variables using this dataset
+
+```{r}
+options(scipen = 10)
+plot(sba$ApprovalFY,
+     sba$DisbursementGross_2,
+     pch = 16,
+     col = "blue",
+     xlab = "Approval Year",
+     ylab = "Gross Disbursement Amount ($)",
+     main = "Gross Disbursement Amount vs. Approval Year"
+     )
+```
+
+b. explain what is good and what is bad about the visualization
+
+What is good about this visualization is that is displays some useful information regarding this dataset. We can see that when plotting gross loan disbursement against years, over the years the loan disbursement amount has increased linearly. Some bad things about this visualization is that while we can see what the gross disbursement amount is over the years, we do not know who is getting these loans. It would be nice to see the loans grouped by status (paid in full or default), which this plot does not show. This plot does not also take into consideration point density, which would be useful in a scatter plot.
+
+c. show a substantially improved visualization
+
+```{r warning=FALSE}
+sba = subset(sba, (!is.na(sba$MIS_Status))) #remove NAs from loan status
+
+ggplot(sba, aes(x = ApprovalFY, y = DisbursementGross_2, color = MIS_Status)) +
+  geom_point(alpha = .3) +
+  labs(x = "Approval Year", y = "Disbursement Amount ($'s)",
+       title = "Disbursement Amount vs Approval Year",
+       color = "Loan Status") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black"))
+```
+
+d. describe the improvement and why the improved plot in part **c** helps the reader/viewer more than the original plot in part **a**.
+
+This plot is an improvement as it utilizes grouped-by coloring for *MIS_Status*, which shows whether or loan was charged off or paid in full. This is helpful as it shows us how the disbursement amounts between loan status's differ. This plot also includes a legend to differ between the point colors, which is very useful. It also utilizes point density to show the disbursement amount density of each approval year. Overall, this plot is an improvement as it helps the reader understand what is going on more, as well as gives more information while keeping the same plot look.
+
+### 5. Using the SBA Business Loans Data, do the following:
+
+a. create a table of descriptive statistics of your choice
+
+```{r warning=FALSE}
+sba %>% group_by(MIS_Status) %>%
+  summarise("90% Quantile" = quantile(DisbursementGross_2, .90))
+```
+
+
+b. add one descriptive statistic to the plot in part **1c**
+
+```{r warning=FALSE}
+disburse_90quan_pif = quantile(sba$DisbursementGross_2[sba$MIS_Status == "P I F"], .90)
+disburse_90quan_chgoff = quantile(sba$DisbursementGross_2[sba$MIS_Status == "CHGOFF"], .90)
+
+ggplot(sba, aes(x = ApprovalFY, y = DisbursementGross_2, color = MIS_Status)) +
+  geom_point(alpha = .3) +
+  geom_hline(aes(yintercept = disburse_90quan_pif, linetype = "P | F"), color = "grey", size = 1) +
+  geom_hline(aes(yintercept = disburse_90quan_chgoff, linetype = "CHGOFF"), color = "black", size = 1) +
+  labs(x = "Approval Year", y = "Disbursement Amount ($'s)",
+       title = "Disbursement Amount vs Approval Year",
+       color = "Loan Status") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black")) +
+  scale_linetype_manual(name = "Disbursement 90% Quantiles", values = c(2, 2),
+                        guide = guide_legend(override.aes = list(color = c("black", "grey"))))
+```
+
+
+c. write a brief explanatory narrative of the visualization in part **2b**. In your explanation, be convincing and persuasive about your visualization. Attempt to highlight why this visualization is crucial to your imaginary supervisor.
+
+This visualization gives the viewer a plot of loan disbursement amount against the approval year. It shows that through the years, the loan disbursement amount has increased as well as the amount of loans that are paid in full rather than charged off. We can see this by looking at the color of the points, where the color differentiates between each loan status group. This plot also includes the 90th percentile disbursement amount between loan status groups. This plot is very useful as it conveys a lot of information, that is very easy to understand. This visualization allows us to see how loan disbursements differ between loan status's, and how much we are disbursing per year in loans. 
+
+
+## Select in-class tasks
+	
+Completion of select in-class tasks will be worth 1 point and will be graded largely by completion. Obvious errors and incomplete work will recieve deductions. 
+
+1. Explain what the Riemannian sums simulator in Example 5b of the Week 7 Notes is doing. Why does it work reasonably well? Can you cook up an example where it will not work while keeping $n = 10000$ (Hint: think of the relationship between $a$, $b$, and $n$)?
+
+This works well as it approximates the integral by calculating the area under the curve using `n` rectangles. As `n` goes towards infinity, it fits the curve better and gives a much more precise result. This will not work if you are integrating between the same points, such as `a` = 0 and `b` = 0, since the area of an exact point on a curve is zero. I believe that the Riemann sum, using `n` = 10000, will not work in this example.
+
+2. Create a custom function that computes 3 different outlier detectors given a single vector of data. The function should return 6 cutoff values (2 for each outlier detector) from the following methods:
+
+a. 3 Sigma Rule $|x-\bar{x}|>3 \cdot \hat{\sigma}$ 
+  
+b. 1.5*IQR Rule $x<Q_1-1.5\cdot IQR$ or $x>Q_3+1.5 \cdot IQR$
+  
+c. Hampel Identifier $|x-\tilde{x}|> 3 \cdot \tilde{\sigma}$  
+      - $\tilde{x}$ is the median of $x$  
+      - $\tilde{\sigma}=1.4826 \cdot \textrm{median}\{|x-\tilde{x}|\}$ is the median of the absolute deviation from the median (MADM or MAD) scale estimate. 
+
+```{r}
+outlier_detection = function(x) {
+  sigma_cutoffs = c(3*sd(x) + mean(x),
+                    -3*sd(x) + mean(x))
+  iqr_cutoffs = c(quantile(x, .25) - 1.5*IQR(x),
+                  quantile(x, .75) + 1.5*IQR(x))
+  tilda_x = median(x)
+  tilda_sigma = 1.4826*median(abs(x - tilda_x))
+  hampel_cutoffs = c(3*tilda_sigma + tilda_x,
+                     -3*tilda_sigma + tilda_x)
+  data.frame(sigma_cutoffs,
+             iqr_cutoffs,
+             hampel_cutoffs)
+}
+
+test = rnorm(1000, 0, 10)
+outlier_detection(test)
+```
+
+	
