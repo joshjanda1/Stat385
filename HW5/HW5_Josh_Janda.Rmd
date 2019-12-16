@@ -1,0 +1,496 @@
+---
+title: "STAT 385 Homework Assignment 05"
+author: "Josh Janda"
+date: "Due by 12:00 PM 11/16/2019"
+output: html_document
+---
+
+
+## HW 5 Problems
+
+Below you will find problems for you to complete as an individual. It is fine to discuss the homework problems with classmates, but cheating is prohibited and will be harshly penalized if detected.
+
+```{r}
+library(tidyverse)
+```
+
+### 1. Using the **ggplot** function and tidyverse functionality, do the following visualizations:
+
+a. recreate your improved visualization in **problem 2c of HW04**
+
+```{r}
+inspection_data = read_csv("https://data.cityofchicago.org/api/views/4ijn-s7e5/rows.csv")
+
+freq_table = as.data.frame(inspection_data %>%
+                             count(Risk, Results))
+
+ggplot(freq_table, aes(factor(Risk), n, fill = Results)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Risk Levels", y = "Frequency",
+       fill = "Inspection Result",
+       title = "Count of Inspection Results between Risk Levels") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black"))
+#Eck said it was okay for me to use ggplot in hw4.
+```
+
+b. add a new visually appealing layer to the plot that helps clarify the plot and separately include a short description beneath the plot, such as "Fig. 1 shows..."
+
+```{r}
+inspection_data %>% group_by(Risk) %>%
+  summarise(failRate = sum(Results == "Fail") / nrow(inspection_data))
+fail_rates = inspection_data %>% group_by(Risk) %>%
+  summarise(failRate = sum(Results == "Fail") / nrow(inspection_data)) %>%
+  mutate(rounded = round(failRate, 3))
+
+freq_table = as.data.frame(inspection_data %>%
+                             count(Risk, Results))
+ggplot(freq_table, aes(factor(Risk), n, fill = Results)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Risk Levels", y = "Frequency",
+       fill = "Inspection Result",
+       title = "Count of Inspection Results between Risk Levels",
+       caption = "This plot shows the inspection results between\n each risk level of restaurants, as well as the fail rate for each risk level.") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black")) +
+  annotate(geom = "text", x = 1.7, y = 30, label = fail_rates$rounded[3] , vjust = -14,
+           color = "black") +
+  annotate(geom = "text", x = 2.75, y = 30, label = fail_rates$rounded[4] , vjust = -5,
+           color = "black") +
+  annotate(geom = "text", x = 3.75, y = 30, label = fail_rates$rounded[5] , vjust = -2,
+           color = "black")
+```
+
+
+c. recreate your improved visualization in **problem 4c of HW04**
+
+```{r warning=FALSE, cache=TRUE}
+options(scipen = 10)
+sba = read_csv("https://uofi.box.com/shared/static/vi37omgitiaa2yyplrom779qvwk1g14x.csv")
+
+sba$DisbursementGross_2 = as.numeric(gsub("[\\$,]", "", sba$DisbursementGross))
+
+sba = subset(sba, (!is.na(sba$MIS_Status))) #remove NAs from loan status
+
+ggplot(sba, aes(x = ApprovalFY, y = DisbursementGross_2, color = MIS_Status)) +
+  geom_point(alpha = .3) +
+  labs(x = "Approval Year", y = "Disbursement Amount ($'s)",
+       title = "Disbursement Amount vs Approval Year",
+       color = "Loan Status") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black"))
+#Eck said it was okay for me to use ggplot in hw4.
+```
+
+d. add a new visually appealing layer to the plot that helps clarify the plot and separately include a short description beneath the plot, such as "Fig. 2 shows..."
+
+```{r warning=FALSE, cache=TRUE}
+options(scipen = 10)
+disburse_90quan_pif = quantile(sba$DisbursementGross_2[sba$MIS_Status == "P I F"], .90)
+disburse_90quan_chgoff = quantile(sba$DisbursementGross_2[sba$MIS_Status == "CHGOFF"], .90)
+
+ggplot(sba, aes(x = ApprovalFY, y = DisbursementGross_2, color = MIS_Status)) +
+  geom_point(alpha = .3) +
+  geom_hline(aes(yintercept = disburse_90quan_pif, linetype = "P | F"), color = "grey", size = 1) +
+  geom_hline(aes(yintercept = disburse_90quan_chgoff, linetype = "CHGOFF"), color = "black", size = 1) +
+  labs(x = "Approval Year", y = "Disbursement Amount ($'s)",
+       title = "Disbursement Amount vs Approval Year",
+       color = "Loan Status",
+       caption = "This plot shows loan disbursement amount against approval year, and points are colored by loan status.\n Plot also shows density of points, as well as 90th percentiles for each loan status group.") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.caption = element_text(hjust = 0.40),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black")) +
+  scale_linetype_manual(name = "Disbursement 90% Quantiles", values = c(2, 2),
+                        guide = guide_legend(override.aes = list(color = c("black", "grey"))))
+```
+
+### 2. Successfully import the US Natality Data (for year 2015). The necesssary data links are in the Datasets file on Prof. Kinson's course website (see [here](https://uofi.box.com/shared/static/kv89ff7n55bkjsxrsx9nlthpl1yocqpo.html)). One is a single csv file 1.9 GB in size. If your computer cannot handle that processing, do use the partitioned version of the data, which are 20 csv files of the same US Natality Data. Here's a [User Guide](https://uofi.box.com/shared/static/ub0tgcz91z2fpnoc1yazkss5yt2bobhy.pdf) for this data that may help with understanding the data. It might also be helpful for this problem or later problems.
+
+#### **Bonus (worth 5 additional points, i.e. your max HW 05 score could be 15 out of 10): do problem 2 using parallel programming ideas (particularly with foreach) discussed in class. No outside functions/packages other than those discussed in the notes on parallel programming.**
+
+```{r}
+library(doParallel)
+cl = makeCluster(detectCores(logical = FALSE))
+registerDoParallel(cl)
+
+usnat = foreach(i = 1:20, .combine = "rbind", .packages = "vroom")  %dopar% {
+  vroom(paste("F:/School/Stat 385/usnat/nat15p",i,".csv", sep=""), delim = ",")
+}
+```
+
+### 3. Using the **ggplot** function and tidyverse functionality, recreate or reimagine the following visualizations using the appropriate data. Be sure to use the visual design considerations from Knaflic's **Storytelling with Data**.
+
+a. The image below uses the US Natlity Data. Also, explain the image with Markdown syntax.
+
+```{r}
+nativity = usnat %>% dplyr::select(c(MBSTATE_REC, MRACE15, MEDUC)) %>% dplyr::filter(MBSTATE_REC < 3) %>%
+  dplyr::filter(MRACE15 %in% c(04, 05, 06, 07, 08, 09, 10)) %>% dplyr::filter(MEDUC >= 6) %>%
+  mutate(educ = ifelse(MEDUC == 6, "Bachelors", "Masters+"))
+
+nativity_grouped = as.data.frame(nativity %>%
+                                   count(MBSTATE_REC, MRACE15, educ) %>%
+                                   mutate(perc = n / nrow(nativity)))
+nativity_grouped$MRACE15 = as.factor(nativity_grouped$MRACE15)
+nativity_grouped = nativity_grouped %>%
+  mutate(race_label = factor(MRACE15, labels = c("Asian Indian",
+                                                  "Chinese",
+                                                  "Filipino",
+                                                  "Japanese",
+                                                  "Korean",
+                                                  "Vietnamese",
+                                                  "Other Asian")),
+         born_loc = factor(MBSTATE_REC, labels = c("Born in US",
+                                                   "Born Outside US")))
+
+```
+
+![](https://uofi.box.com/shared/static/ijcjlnwjq7uwrv3paf4bmwam20h34w2d.png)
+
+```{r}
+ggplot(data = nativity_grouped,
+       aes(x = interaction(born_loc, race_label),
+               y = perc, fill = educ)) +
+  geom_bar(stat = "identity",
+           position = "fill",
+           width = .90) +
+  geom_text(aes(label = scales::percent(perc)),
+            position = "fill",
+            size = 3) +
+  coord_flip() +
+  labs(x = "Race", y = "Percentage",
+       fill = "Education",
+       title = "Percentage of Asian Mothers with a Bachelors Degree and Above\nGrouped By Birthplace and Asian Subgroup") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black"))
+```
+
+The image analyzes only non-Hispanic Asian mothers who have at least a bachelors degree. The races of mothers are separated on whether or not the mother was born inside the US or outside of the US. Percentages show the total percent of that group has attained either a bachelors degree or a masters degree and above. We can see from the plot that Asian Indians born outside the US have the highest education attainment, with 17.3% of them attaining at least a bachelors and 14.4% attaining a masters degree or higher. Overall, this visualization gives the viewer a story of college degree attainment between Asian races born inside and outside of the US.
+
+b. The image below uses the US Natlity Data. Also, explain the image with Markdown syntax (do not include the explanation within the visualization).
+
+```{r}
+ages = usnat %>% dplyr::select(c(MBSTATE_REC, MRACE15, MAGER9)) %>% dplyr::filter(MBSTATE_REC < 3) %>%
+  dplyr::filter(MRACE15 %in% c(04, 05, 06, 07, 08, 09, 10)) %>% dplyr::filter(MAGER9 >= 5) %>%
+  mutate(age = ifelse(MAGER9 %in% c(5, 6), "Aged 30-39", "Aged 40 and over"))
+
+ages_grouped = as.data.frame(ages %>%
+                                   count(MBSTATE_REC, MRACE15, age) %>%
+                                   mutate(perc = n / nrow(ages)))
+ages_grouped$MRACE15 = as.factor(ages_grouped$MRACE15)
+ages_grouped = ages_grouped %>%
+  mutate(race_label = factor(MRACE15, labels = c("Asian Indian",
+                                                  "Chinese",
+                                                  "Filipino",
+                                                  "Japanese",
+                                                  "Korean",
+                                                  "Vietnamese",
+                                                  "Other Asian")),
+         born_loc = factor(MBSTATE_REC, labels = c("Born in US",
+                                                   "Born Outside US")))
+
+```
+
+
+![](https://uofi.box.com/shared/static/1b5n0frv30n5bf3un7pldmxtf6lvwi75.png)
+
+```{r}
+ggplot(data = ages_grouped,
+       aes(x = interaction(born_loc, race_label),
+               y = perc, fill = age)) +
+  geom_bar(stat = "identity",
+           position = "fill",
+           width = .90) +
+  geom_text(aes(label = scales::percent(perc)),
+            position = "fill",
+            size = 3) +
+  coord_flip() +
+  labs(x = "Race", y = "Percentage",
+       fill = "Ages",
+       title = "Percentage of Asian Mothers Aged 30 and Over\nGrouped By Birthplace and Asian Subgroup") +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black"))
+```
+
+The image analyzes only non-Hispanic Asian mothers who are at least 30 years old. The races of mothers are separated on whether or not the mother was born inside the US or outside of the US. Percentages show the total percent of that group that is 30-39 years old, or above 40 years old. We can see from the plot that Asian Indian woman born outside the US have the percentage of ages between 30-39, with 23.1% of them being in that range. Overall, this visualization gives the viewer a story of age differences between Asian races born inside and outside of the US.
+
+c. The image below uses the Chicago Food Inspections Data [link here](https://uofi.box.com/shared/static/5637axblfhajotail80yw7j2s4r27hxd.csv). Also, explain the image with Markdown syntax (do not include the explanation within the visualization).
+
+![](https://uofi.box.com/shared/static/xn71gksmqvz6z30i145c2pnwzrtzblh4.png)
+
+```{r}
+library(ggmap)
+inspection_failed = inspection_data %>% select(Longitude, Latitude, Results, `Inspection Date`) %>%
+  mutate(inspection_date = as.Date(`Inspection Date`, format = "%m/%d/%Y")) %>%
+  filter(Results == "Fail",
+         inspection_date >= "2015-01-01",
+         inspection_date <= "2016-12-31") %>%
+  select(-`Inspection Date`) %>%
+  drop_na()
+
+key = as.character(read.table("F:/School/Stat 385/google_api.txt")$V1)
+register_google(key=key)
+chicago = get_map(location = "chicago", zoom = 11)
+
+ggmap(chicago) +
+  geom_point(data = inspection_failed,
+             aes(x = Longitude, y = Latitude),
+             fill = "blue", alpha = .3, color = "turquoise3",
+             na.rm = TRUE) +
+  labs(x = "", y = "",
+       title = "Restaurants Failing to Pass Inspections: 2015-2016") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+```
+
+The plot above shows the locations of the restaurants that have failed to pass inspections between 2015-2016 using geolocations. We can see that the most dense locations are directly in chicago, while failure decreases as you start to leave the city.
+
+d. The image below uses the Chicago Food Inspections Data. Also, explain the image with Markdown syntax (do not include the explanation within the visualization).
+
+![](https://uofi.box.com/shared/static/19hgnx2otbpfk2i8kcnk9uthw4kirvux.png)
+
+```{r}
+library(zoo)
+inspection_count = inspection_data %>% select(`Inspection Date`) %>%
+  mutate(inspection_date = as.Date(`Inspection Date`, format = "%m/%d/%Y")) %>%
+  select(-`Inspection Date`)
+
+inspection_freq = inspection_count %>%
+  mutate(month_year = as.Date(as.yearmon(inspection_date, "%m-%Y"))) %>%
+  count(month_year)
+
+ggplot(data = inspection_freq, aes(x = month_year, y = n)) +
+  geom_area(alpha = .30, color = "dodgerblue1", fill = "deepskyblue1") +
+  labs(x = "Date of Inspection", y = "Number of Inspections",
+       title = "Number of Food Inspections per Month") +
+  theme(panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        plot.title = element_text(hjust = 0.5)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year")
+
+```
+
+The plot above shows the number of inspections per month. As we can see, in the city of Chicago there are at least 1,000 inspections per month (excluding any outliers). This plot helps demonstrate to the reader the number of inspections happening per month, as well as daily through the use of an area plot.
+
+### 4. Do the following:
+
+Redo problem 3 in **HW03** using the parallel programming.  Does parallel computing perform the tasks in parts **c** and **e** faster than the method that you used in **HW03**? Show your work including the runtimes for the un-parallelized and parallelized versions.
+
+```{r}
+set.seed(385)
+library(knitr)
+datahw3 = read.csv("F:/School/Stat 385/joshlj2/HW3/datahw3.csv")
+x = datahw3[, 1]
+y = datahw3[, 2]
+
+#c#
+registerDoParallel(cl)
+parallel_st_c = Sys.time()
+c_parallel = foreach(i=1:10000, .combine = "c") %dopar% {
+  samplex = sample(x, replace=TRUE)
+  (mean(samplex) - mean(x)) / (sd(samplex) / sqrt(length(samplex)))
+}
+parallel_et_c = Sys.time() - parallel_st_c
+
+resam_function = function(x) {
+  samplex = sample(x, replace=TRUE)
+  (mean(samplex) - mean(x)) / (sd(samplex) / sqrt(length(samplex)))
+}
+
+noparallel_st_c = Sys.time()
+resam_stats = replicate(10000, resam_function(x))
+noparallel_et_c = Sys.time() - noparallel_st_c
+#end c#
+
+#d#
+registerDoParallel(cl)
+parallel_st_e = Sys.time()
+e_parallel = foreach(i=1:10000, .combine = "c") %dopar% {
+  sampley = sample(x, replace=TRUE)
+  (mean(sampley) - mean(y)) / (sd(sampley) / sqrt(length(sampley)))
+}
+parallel_et_e = Sys.time() - parallel_st_e
+
+noparallel_st_e = Sys.time()
+resam_stats = replicate(10000, resam_function(y))
+noparallel_et_e = Sys.time() - noparallel_st_e
+
+runtimes = data.frame("Parallel" = c("C" = parallel_et_c,
+                                     "E" = parallel_et_e),
+                      "NonParallel" = c("C" = noparallel_et_c,
+                                        "E" = noparallel_et_e))
+kable(runtimes)
+```
+
+Looking at the table above, we can see that the method utilizing the `replicate` function rather than parallel processing is more efficient. While this may vary on different computers (depending on how powerful it is), it makes sense that the `replicate` function would be better than parallel processing in this situation. This is because `replicate` replicates a function over a vector n times, in this case replicates our resample function over `x` or `y` 10000 times. Since this is a vectorized operation rather than a looping one, this is faster. Even with more processing power, it will still take longer to iterate over the data rather than use vectorized operations.
+
+### 5. Problem in parallel coding
+
+a. Install the **conformal.glm** R package which can be found at https://github.com/DEck13/conformal.glm.  
+
+Run the following code:
+
+```{r}
+library(devtools)
+install_github(repo = "DEck13/conformal.glm", subdir="conformal.glm")
+library(HDInterval)
+library(MASS)
+library(parallel)
+library(conformal.glm)
+set.seed(13)
+n <- 250
+
+# generate predictors
+x <- runif(n)
+
+# set regression coefficient vector
+beta <- c(3, 5)
+
+# generate responses from a linear regression model
+y <- rnorm(n, mean = cbind(1, x) %*% beta, sd = 3)
+
+# store predictors and responses as a dataframe
+dat <- data.frame(y = y, x = x)
+
+# fit linear regression model
+model <- lm(y ~ x, data = dat)
+
+# obtain OLS estimator of beta
+betahat <- model$coefficients
+
+# convert predictors into a matrix
+Xk <- as.matrix(x, nrow = n)
+
+# extract internal model information, this is necessary for the assignment
+call <- model$call
+formula <- call$formula
+family <- "gaussian"
+link <- "identity"
+newdata.formula <- as.matrix(model.frame(formula, as.data.frame(dat))[, -1])
+
+# This function takes on a new (x,y) data point and reports a 
+# value corresponding to how similar this new data point is 
+# with the data that we generated, higher numbers are better.  
+# The goal is to use this function to get a range of new y 
+# values that agrees with our generated data at each x value in 
+# our generated data set.
+density_score <- function(ynew, xnew){
+  rank(phatxy(ynew = ynew, xnew = xnew, Yk = y, Xk = Xk, xnew.modmat = xnew, 
+    data = dat, formula = formula, family = family, link = link))[n+1]
+}
+
+# We try this out on the first x value in our generated data set. 
+# In order to do this we write two line searches
+xnew <- x[1]
+
+# start line searches at the predicted response value 
+# corresponding to xnew
+ystart <- ylwr <- yupr <- as.numeric(c(1,xnew) %*% betahat)
+score <- density_score(ynew = ystart, xnew = xnew)
+
+# line search 1: line search that estimates the largest y 
+# value corresponding to the first x value that agrees with 
+# our generated data 
+while(score > 13){
+  yupr <- yupr + 0.01
+  score <- density_score(ynew = yupr, xnew = xnew)
+}
+
+# line search 2: line search that estimates the smallest y 
+# value corresponding to the first x value that agrees with 
+# our generated data 
+score <- density_score(ynew = ystart, xnew = xnew)
+while(score > 13){
+  ylwr <- ylwr - 0.01
+  score <- density_score(ynew = ylwr, xnew = xnew)
+}
+```
+
+b. Write a function which runs the two line searches in part **a** for the jth generated predictor value.
+
+```{r}
+line_search = function(x) {
+  xnew = x
+  ystart = ylwr = yupr = as.numeric(c(1,xnew) %*% betahat)
+  score = density_score(ynew = ystart, xnew = xnew)
+  
+  while (score > 13) {
+    yupr = yupr + .01
+    score = density_score(yupr, xnew)
+  }
+  
+  score = density_score(ynew = ystart, xnew = xnew)
+  
+  while (score > 13) {
+    ylwr = ylwr - .01
+    score = density_score(ylwr, xnew)
+  }
+  data.frame(x = xnew,
+             ylwr = ylwr,
+             yupr = yupr)
+}
+```
+
+
+
+c. Use parallel programming to run the function you wrote in part **b**.  Save the output and record the time that it took to perform these calculations  *NOTE: It is not advised to use `detectCores` as an argument in defining the number of workers you want. It's much better to specify the number of workers explicitly.*
+
+```{r}
+registerDoParallel(cl)
+
+st_5c = Sys.time()
+lwr_upr_5c = foreach(i=1:length(x), .combine = "rbind", .packages = "conformal.glm") %dopar% {
+  xnew = x[i]
+  line_search(xnew)
+}
+et_5c = Sys.time() - st_5c
+```
+```{r}
+paste("Runtime:", et_5c, "minutes")
+```
+
+d. Redo the calculation in part **c** using ``lapply`` and record the time it took to run this job. Which method is faster?
+
+```{r}
+st_5d = Sys.time()
+lwr_upr_5d = lapply(x, line_search)
+et_5d = Sys.time() - st_5d
+```
+```{r}
+paste("Runtime:", et_5d, "minutes")
+```
+
+
+The method that is faster is `foreach` rather than `lapply`. I believe that `foreach` is faster as it is utilizing multiple cores to compute the line_search function, rather than one core as `lapply` is using. This speeds up the function run-time by a great amount, giving it a better runtime.
+
+e. Using **ggplot**, plot the original data and depict lines of the lower and upper boundaries that you computed from part **c**.
+
+```{r}
+ggplot(data = lwr_upr_5c, aes(x = x, y = y, ymin = ylwr, ymax = yupr)) +
+  geom_point(aes(x, y, color = "Actual")) +
+  geom_point(aes(x, ylwr, color = "Lower Bound"), alpha = .3) +
+  geom_point(aes(x, yupr, color = "Upper Bound"), alpha = .3) +
+  labs(x = "X", y = "Y",
+       title = "Y vs X w/ Computed Lower/Upper Bounds") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_color_manual(values = c("Actual" = "orange",
+                                "Lower Bound" = "blue",
+                                "Upper Bound" = "blue"))
+```
+
+
+
+
